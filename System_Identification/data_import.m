@@ -155,7 +155,7 @@ end
 ts_search = 50;
 te_search = 100;
 
-figure(100); set(gcf, 'Color', 'w');
+% figure(100); set(gcf, 'Color', 'w');
 
 % subplot(3,1,1);  
 % plot(globalTime, body_rate_pqr(:,1),'r'); hold on; grid on;

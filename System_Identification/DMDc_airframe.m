@@ -7,7 +7,7 @@ clc;
 
 dt = 1/40;
 
-dmdc = 0; %% set to 1 to run and plot dmdc, set to 0 to plot input interval
+dmdc = 1; %% set to 1 to run and plot dmdc, set to 0 to plot input interval
 gen = 1;
 
 %%% mode,  0 = roll , 1 = pitch , 2 = heave , 3 = yaw , other = full state
@@ -16,14 +16,12 @@ gen = 1;
 ts_search = 50; % used to find the input to the modes
 te_search = 320;
 
-%%%%%%%%%%%% roll + gen
-mode = 5;
+% %%%%%%%%%%% roll + gen
+% mode = 0;
 % ts = 94;
-% te = 114; 
-ts = 178;
-te = 240; 
-ts_gen = 188;
-te_gen = 198;
+% te = 100; 
+% ts_gen = 188;
+% te_gen = 198;
 
 % %%%%%%%%%% pitch + gen
 % mode = 1;
@@ -45,6 +43,13 @@ te_gen = 198;
 % te = 160; 
 % ts_gen = 195;
 % te_gen = 205;
+
+%%%%%%%%%%% roll+pitch + gen
+mode = 5;
+ts = 94;
+te = 100; 
+ts_gen = 188;
+te_gen = 198;
 
 input_shift = -0.004;
 

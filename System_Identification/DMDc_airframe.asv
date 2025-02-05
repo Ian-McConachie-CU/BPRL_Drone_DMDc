@@ -16,10 +16,10 @@ gen = 1;
 ts_search = 50; % used to find the input to the modes
 te_search = 320;
 
-%%%%%%%%%%%% roll + gen
+%%%%%%%%%%% roll + gen
 mode = 0;
 ts = 94;
-te = 114; 
+te = 100; 
 ts_gen = 188;
 te_gen = 198;
 
@@ -167,7 +167,7 @@ xOutput_roll = [phi_dmdc; p_dmdc ; v_dmdc];
 xOutput_pitch = [theta_dmdc; q_dmdc ; u_dmdc]; 
 xOutput_heave = [ w_dmdc]; 
 xOutput_yaw = [r_dmdc]; 
-xOutput_full = [theta_dmdc; q_dmdc ; u_dmdc]; 
+xOutput_roll_pitch = [phi_dmdc; theta_dmdc;p_dmdc;q_dmdc;u_dmdc;v_dmdc;w_dmdc]; 
 
 % xInputs_act = [M1_dmdc;M2_dmdc;M3_dmdc;M4_dmdc];
 
@@ -190,9 +190,9 @@ elseif mode == 3 % yaw mode
     xInputs_act = M4_dmdc;
     xInput_gen = actuator_matrix(4,:);
 else % full state  
-    xOutput = state_matrix_X(:, time_start:time_end);
-    xInputs_act = [M1_dmdc;M2_dmdc;M3_dmdc;M4_dmdc];
-    xInput_gen = actuator_matrix;
+    xOutput = xOutput_roll_pitch;
+    xInputs_act = [M2_dmdc;M3_dmdc];
+    xInput_gen = actuator_matrix(2:3,:);
 end
 
 sys_act = DMDC_alg(xInputs_act, xOutput, dt);   
@@ -293,7 +293,7 @@ function Plot = Plot_Model(mode_type , state_matrix_X , Input , sys , ts , te , 
     %psi_ref = state_matrix_X(3,ts / dt: te / dt);
     r_ref = state_matrix_X(6, ts / dt: te / dt);
 
-    full_state_ref = state_matrix_X(:, ts / dt: te / dt);
+    full_state_ref = [phi_ref;theta_ref;p_ref;q_ref;u_ref;v_ref;w_ref];
 
     
     figure(seed); set(gcf, 'Color', 'w'); %set(gcf, 'Position', [500 , 800 , 1200 , 900])
@@ -396,64 +396,45 @@ function Plot = Plot_Model(mode_type , state_matrix_X , Input , sys , ts , te , 
     else
 
         state_out_ref = full_state_ref;
-        state_out_gen = lsim(sys, Input(ts/dt:te/dt), Time_gen, state_out_ref(:,1));
+        state_out_gen = lsim(sys, Input(:,ts/dt:te/dt), Time_gen, state_out_ref(:,1));
 
         sgtitle(strcat("Full System",title_input), 'FontWeight', 'bold', 'FontSize', 16);
 
-        subplot(9,1,1)
+        subplot(6,1,1)
         plot(Time_gen, state_out_ref(1,:), 'b', 'Linewidth', 1.5); hold on; grid on;
         plot(Time_gen, state_out_gen(:,1), 'r--', 'Linewidth', 1.5);
         title("Roll Angle (φ)", 'FontSize', 12);
         ylabel('φ (°)', 'FontSize', 11);
 
-        subplot(9,1,2)
+        subplot(6,1,2)
         plot(Time_gen, rad2deg(state_out_ref(2,:)), 'b', 'Linewidth', 1.5); hold on; grid on;
         plot(Time_gen, rad2deg(state_out_gen(:,2)), 'r--', 'Linewidth', 1.5);
         title("Pitch Angle (θ)", 'FontSize', 12);
         ylabel('θ (°)', 'FontSize', 11);
 
-        subplot(9,1,3)
-        plot(Time_gen, rad2deg(state_out_ref(3,:)), 'b', 'Linewidth', 1.5); hold on; grid on;
-        plot(Time_gen, rad2deg(state_out_gen(:,3)), 'r--', 'Linewidth', 1.5);
-        title("Yaw Angle (ψ)", 'FontSize', 12);
-        ylabel('ψ (°)', 'FontSize', 11);
-
-        subplot(9,1,4)
-        plot(Time_gen, state_out_ref(10,:), 'b', 'Linewidth', 1.5);hold on; grid on;
-        plot(Time_gen, state_out_gen(:,10), 'r--', 'Linewidth', 1.5); 
+        subplot(6,1,3)
+        plot(Time_gen, state_out_ref(5,:), 'b', 'Linewidth', 1.5);hold on; grid on;
+        plot(Time_gen, state_out_gen(:,5), 'r--', 'Linewidth', 1.5); 
         title("Linear Velocity (u)", 'FontSize', 12);
         ylabel('u (m/s)', 'FontSize', 11);
         
-        subplot(9,1,5)
-        plot(Time_gen, state_out_ref(11,:).', 'b', 'Linewidth', 1.5);hold on; grid on;
-        plot(Time_gen, state_out_gen(:,11), 'r--', 'Linewidth', 1.5); 
+        subplot(6,1,4)
+        plot(Time_gen, state_out_ref(6,:).', 'b', 'Linewidth', 1.5);hold on; grid on;
+        plot(Time_gen, state_out_gen(:,6), 'r--', 'Linewidth', 1.5); 
         title("Linear Velocity (v)", 'FontSize', 12);
         ylabel('v (m/s)', 'FontSize', 11);
         
-        subplot(9,1,6)
-        plot(Time_gen, state_out_ref(12,:), 'b', 'Linewidth', 1.5);hold on; grid on;
-        plot(Time_gen, state_out_gen(:,12), 'r--', 'Linewidth', 1.5); 
-        title("Linear Velocity (w)", 'FontSize', 12);
-        ylabel('w (m/s)', 'FontSize', 11);
-        
-        subplot(9,1,7)
-        plot(Time_gen, state_out_ref(4,:), 'b', 'Linewidth', 1.5);hold on; grid on;
-        plot(Time_gen, state_out_gen(:,4), 'r--', 'Linewidth', 1.5); 
+        subplot(6,1,5)
+        plot(Time_gen, state_out_ref(3,:), 'b', 'Linewidth', 1.5);hold on; grid on;
+        plot(Time_gen, state_out_gen(:,3), 'r--', 'Linewidth', 1.5); 
         title("Angular Velocity (p)", 'FontSize', 12);
         ylabel('p (°/s)', 'FontSize', 11);
        
-        subplot(9,1,8)
-        plot(Time_gen, rad2deg(state_out_ref(5,:)), 'b', 'Linewidth', 1.5);hold on; grid on;
-        plot(Time_gen, rad2deg(state_out_gen(:,5)), 'r--', 'Linewidth', 1.5); 
+        subplot(6,1,6)
+        plot(Time_gen, rad2deg(state_out_ref(4,:)), 'b', 'Linewidth', 1.5);hold on; grid on;
+        plot(Time_gen, rad2deg(state_out_gen(:,4)), 'r--', 'Linewidth', 1.5); 
         title("Angular Velocity (q)", 'FontSize', 12);
         ylabel('q (°/s)', 'FontSize', 11);
-
-        subplot(9,1,9)
-        plot(Time_gen, rad2deg(state_out_ref(6,:)), 'b', 'Linewidth', 1.5);hold on; grid on;
-        plot(Time_gen, rad2deg(state_out_gen(:,6)), 'r--', 'Linewidth', 1.5); 
-        legend("ground truth", "DMDc estimate", 'FontSize', 10);
-        title("Angular Velocity (r)", 'FontSize', 12);
-        ylabel('r (°/s)', 'FontSize', 11);
 
 
     end
