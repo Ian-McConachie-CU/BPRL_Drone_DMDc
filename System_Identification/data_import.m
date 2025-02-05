@@ -157,23 +157,23 @@ te_search = 100;
 
 figure(100); set(gcf, 'Color', 'w');
 
-subplot(3,1,1);  
-plot(globalTime, body_rate_pqr(:,1),'r'); hold on; grid on;
-plot(globalTime, IMU_pqr(:,1),'b'); hold on; grid on;
-ylabel('p', 'FontWeight', 'bold'); 
-xlim([ts_search,te_search]);
-
-subplot(3,1,2); 
-plot(globalTime, body_rate_pqr(:,2),'r'); hold on; grid on;
-plot(globalTime, IMU_pqr(:,2),'b');  hold on; grid on;
-ylabel('q', 'FontWeight', 'bold');
-xlim([ts_search,te_search]);
-
-subplot(3,1,3); 
-plot(globalTime, body_rate_pqr(:,3),'r'); hold on; grid on;
-plot(globalTime, IMU_pqr(:,3),'b');  hold on; grid on;
-ylabel('r', 'FontWeight', 'bold');   
-xlim([ts_search,te_search]);
+% subplot(3,1,1);  
+% plot(globalTime, body_rate_pqr(:,1),'r'); hold on; grid on;
+% plot(globalTime, IMU_pqr(:,1),'b'); hold on; grid on;
+% ylabel('p', 'FontWeight', 'bold'); 
+% xlim([ts_search,te_search]);
+% 
+% subplot(3,1,2); 
+% plot(globalTime, body_rate_pqr(:,2),'r'); hold on; grid on;
+% plot(globalTime, IMU_pqr(:,2),'b');  hold on; grid on;
+% ylabel('q', 'FontWeight', 'bold');
+% xlim([ts_search,te_search]);
+% 
+% subplot(3,1,3); 
+% plot(globalTime, body_rate_pqr(:,3),'r'); hold on; grid on;
+% plot(globalTime, IMU_pqr(:,3),'b');  hold on; grid on;
+% ylabel('r', 'FontWeight', 'bold');   
+% xlim([ts_search,te_search]);
 
 
 time = globalTime;
