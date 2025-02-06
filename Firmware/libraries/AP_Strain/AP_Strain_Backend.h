@@ -8,7 +8,7 @@
  */
 
 
-// #if AP_STRAIN_ENABLED
+#if AP_STRAIN_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
@@ -25,20 +25,6 @@ class AP_Strain_Backend
         
         // probe and initialise the sensor
         virtual bool init(void) = 0;
-
-        // return the current differential_pressure in Pascal
-        virtual bool get_differential_pressure(float &pressure) {return false;}
-
-        // return the current temperature in degrees C, if available
-        virtual bool get_temperature(float &temperature) = 0;
-
-        // true if sensor reads airspeed directly, not via pressure
-        virtual bool has_airspeed() {return false;}
-
-        // return airspeed in m/s if available
-        virtual bool get_airspeed(float& airspeed) {return false;}
-
-        virtual void handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
 
 
     protected:
@@ -95,4 +81,4 @@ class AP_Strain_Backend
         uint8_t instance;
 };
 
-// #endif  // AP_AIRSPEED_ENABLED
+#endif  // AP_STRAIN_ENABLED
