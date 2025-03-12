@@ -2,8 +2,6 @@
 % close all;
 % clc;
 
-
-
 function [time,inputs,RCIN,states] = data_import(flight_filename,mocap_filename, common_time_step , pad_time)
 
 
@@ -29,17 +27,8 @@ arduObj = ardupilotreader("drone_data_1.bin");
 RCIN_data_raw = readMessages(arduObj,'MessageName',{'RCIN'});
 RCIN_Data = RCIN_data_raw.MsgData{1,1};
 
-PIDR_raw = readMessages(arduObj,'MessageName',{'PIDR'});
-PIDR_data = PIDR_raw.MsgData{1,1};
-
-PIDP_raw = readMessages(arduObj,'MessageName',{'PIDP'});
-PIDP_data = PIDP_raw.MsgData{1,1};
-
-PIDY_raw = readMessages(arduObj,'MessageName',{'PIDY'});
-PIDY_data = PIDY_raw.MsgData{1,1};
-
-throttle_out_raw = readMessages(arduObj,'MessageName',{'CTUN'});
-throttle_out_data = throttle_out_raw.MsgData{1,1};
+PID_data_raw = readMessages(arduObj,'MessageName',{'CTUN'});
+PID_data = PID_data_raw.MsgData{1,1};
 
 IMU_raw = readMessages(arduObj,'MessageName',{'IMU'});
 IMU_Data = IMU_raw.MsgData{1,1};
