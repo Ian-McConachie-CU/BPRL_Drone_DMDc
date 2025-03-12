@@ -61,21 +61,18 @@ yaw_stick = table2array(  yaw_stick_table(:,2)  );
 time_RCIN = HMS_to_sec( timetable2table( RCIN_Data(:,2) ) );
 
 
-throttle_out_table = timetable2table( throttle_out_data(:,4)  );
+throttle_out_table = timetable2table( PID_data(:,4)  );
 throttle_out = table2array(  throttle_out_table(:,2)  );
-time_throttle = HMS_to_sec( timetable2table( throttle_out_data(:,4)) );
+PID_time = HMS_to_sec( timetable2table( PID_data(:,4)) );
 
-PIDR_table = timetable2table(  PIDR_data(:,2)  );
+PIDR_table = timetable2table(  PID_data(:,5)  );
 PIDR = table2array(  PIDR_table(:,2)  );
-time_PIDR = HMS_to_sec( timetable2table( PIDR_data(:,2) ) );
 
-PIDP_table = timetable2table( PIDP_data(:,2)  );
+PIDP_table = timetable2table( PID_data(:,6)  );
 PIDP = table2array(  PIDP_table(:,2)  );
-time_PIDP = HMS_to_sec( timetable2table( PIDP_data(:,2) ) );
 
-PIDY_table = timetable2table( PIDY_data(:,2)  );
+PIDY_table = timetable2table( PID_data(:,7)  );
 PIDY = table2array(  PIDY_table(:,2)  );
-time_PIDY = HMS_to_sec( timetable2table( PIDY_data(:,2) ) );
 
 IMU_x_table = timetable2table(  IMU_Data(:,3)  );
 IMU_x = table2array(  IMU_x_table(:,2)  );
@@ -96,10 +93,10 @@ position_xyz = interp1(mocapTime, [pos_x,pos_y,pos_z], globalTime, 'linear');
 rotation_rpy = unwrap(interp1(mocapTime, [roll,pitch,yaw], globalTime, 'linear'));
 
 % Interpolate inputs 
-thrust_input = interp1(time_throttle, throttle_out, globalTime, 'linear');
-roll_input = interp1(time_PIDR, PIDR, globalTime, 'linear');
-pitch_input = interp1(time_PIDP, PIDP, globalTime, 'linear');
-yaw_input = interp1(time_PIDY, PIDY, globalTime, 'linear');
+thrust_input = interp1(PID_time, throttle_out, globalTime, 'linear');
+roll_input = interp1(PID_time, PIDR, globalTime, 'linear');
+pitch_input = interp1(PID_time, PIDP, globalTime, 'linear');
+yaw_input = interp1(PID_time, PIDY, globalTime, 'linear');
 
 % Interpolate RCIN
 RCIN_trpy = interp1(time_RCIN, [throttle_in,roll_stick,pitch_stick,yaw_stick], globalTime, 'linear');
