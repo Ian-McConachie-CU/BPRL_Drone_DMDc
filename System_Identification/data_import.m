@@ -2,9 +2,9 @@
 % close all;
 % clc;
 
-function [time,inputs,RCIN,states] = data_import(flight_filename,mocap_filename, common_time_step , pad_time)
+function [time,inputs,RCIN,states] = data_import(flight_filename,mocap_filename, common_time_step , pad_time,search_interval);
 
-
+plot = 0; %set to 1 to plot IMU 
 start = 1; %sec
 stop = 320; %sec
 % dt = 1/40; %sec
@@ -21,8 +21,8 @@ timeLength = size(globalTime);
 mocapData = readtable(mocap_filename, 'NumHeaderLines', 5);
 
 %% Read in flight data
-arduObj = ardupilotreader("drone_data_1.bin");
-%arduObj = ardupilotreader(flight_filename);
+% arduObj = ardupilotreader("drone_data_1.bin");
+arduObj = ardupilotreader(flight_filename);
 
 RCIN_data_raw = readMessages(arduObj,'MessageName',{'RCIN'});
 RCIN_Data = RCIN_data_raw.MsgData{1,1};
@@ -52,10 +52,10 @@ throttle_in = table2array(  throttle_in_table(:,2)  );
 roll_stick_table = timetable2table(  RCIN_Data(:,3)  );
 roll_stick = table2array(  roll_stick_table(:,2)  );
 
-pitch_stick_table = timetable2table(  RCIN_Data(:,4)  );
+pitch_stick_table = timetable2table(  RCIN_Data(:,5)  );
 pitch_stick = table2array(  pitch_stick_table(:,2)  );
 
-yaw_stick_table = timetable2table(  RCIN_Data(:,5)  );
+yaw_stick_table = timetable2table(  RCIN_Data(:,4)  );
 yaw_stick = table2array(  yaw_stick_table(:,2)  );
 
 time_RCIN = HMS_to_sec( timetable2table( RCIN_Data(:,2) ) );
@@ -138,29 +138,31 @@ for i = 1:timeLength(1)
     body_rate_pqr(i,1:3) = R1 * euler_rate(i, :).';
 
 end
-ts_search = 50;
-te_search = 100;
+ts_search = search_interval(1);
+te_search = search_interval(2);
 
-figure(100); set(gcf, 'Color', 'w');
-
-subplot(3,1,1);  
-plot(globalTime, body_rate_pqr(:,1),'r'); hold on; grid on;
-plot(globalTime, IMU_pqr(:,1),'b'); hold on; grid on;
-ylabel('p', 'FontWeight', 'bold'); 
-xlim([ts_search,te_search]);
-
-subplot(3,1,2); 
-plot(globalTime, body_rate_pqr(:,2),'r'); hold on; grid on;
-plot(globalTime, IMU_pqr(:,2),'b');  hold on; grid on;
-ylabel('q', 'FontWeight', 'bold');
-xlim([ts_search,te_search]);
-
-subplot(3,1,3); 
-plot(globalTime, body_rate_pqr(:,3),'r'); hold on; grid on;
-plot(globalTime, IMU_pqr(:,3),'b');  hold on; grid on;
-ylabel('r', 'FontWeight', 'bold');   
-xlim([ts_search,te_search]);
-
+if plot == 1
+    figure(100); set(gcf, 'Color', 'w');
+    
+    subplot(3,1,1);  
+    plot(globalTime, body_rate_pqr(:,1),'r'); hold on; grid on;
+    plot(globalTime, IMU_pqr(:,1),'b'); hold on; grid on;
+    ylabel('p', 'FontWeight', 'bold'); 
+    xlim([ts_search,te_search]);
+    
+    subplot(3,1,2); 
+    plot(globalTime, body_rate_pqr(:,2),'r'); hold on; grid on;
+    plot(globalTime, IMU_pqr(:,2),'b');  hold on; grid on;
+    ylabel('q', 'FontWeight', 'bold');
+    xlim([ts_search,te_search]);
+    
+    subplot(3,1,3); 
+    plot(globalTime, body_rate_pqr(:,3),'r'); hold on; grid on;
+    plot(globalTime, IMU_pqr(:,3),'b');  hold on; grid on;
+    ylabel('r', 'FontWeight', 'bold');   
+    xlim([ts_search,te_search]);
+    legend('Mocap','IMU');
+end
 
 time = globalTime;
 inputs = [thrust_input,roll_input,pitch_input,yaw_input];

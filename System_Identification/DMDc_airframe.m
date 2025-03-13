@@ -13,15 +13,15 @@ gen = 1;
 %%% mode,  0 = roll , 1 = pitch , 2 = heave , 3 = yaw , other = full state
 
 %%%%%%%% defines the interval of interest 
-ts_search = 50; % used to find the input to the modes
-te_search = 320;
+ts_search = 60; % used to find the input to the modes
+te_search = 210;
 
-%%%%%%%%%%%% roll + gen
+%%%%%%%%%%% roll + gen
 mode = 0;
-ts = 94;
-te = 114; 
-ts_gen = 188;
-te_gen = 198;
+ts = 167;
+te = 170; 
+ts_gen = 140;
+te_gen = 160;
 
 % %%%%%%%%%% pitch + gen
 % mode = 1;
@@ -46,7 +46,7 @@ te_gen = 198;
 
 input_shift = -0.004;
 
-[time_import,inputs_import,RCIN_import,states_import] = data_import("drone_data_1.bin",'mocap_1.csv', dt , 1.45);
+[time_import,inputs_import,RCIN_import,states_import] = data_import("drone_data_2.bin",'mocap_2.csv', dt , 33.6, [ts_search,te_search]);
 
 %%%%Extract data
 time = time_import - time_import(1);
@@ -77,7 +77,7 @@ yaw_input = RCIN_import(:,4);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% input data processing 
 
-shift_spot = 100 / dt;
+shift_spot = 97 / dt;
 
 throttle = throttle - throttle(shift_spot);
 roll_input = roll_input - roll_input(shift_spot);
@@ -211,8 +211,8 @@ if dmdc == 0
 
     figure(2); set(gcf, 'Color', 'w');
     subplot(4,1,1); plot(time, actuator_matrix(1,:),'k'); ylabel('U heave', 'FontWeight', 'bold'); hold on;grid on; xlim([ts_search,te_search]);
-    subplot(4,1,2); plot(time, actuator_matrix(2,:),'r'); ylabel('U roll', 'FontWeight', 'bold'); hold on;grid on; xlim([ts_search,te_search]);ylim([-40,40]);
-    subplot(4,1,3); plot(time, actuator_matrix(3,:),'b'); ylabel('U pitch', 'FontWeight', 'bold'); hold on;grid on; xlim([ts_search,te_search]);ylim([-40,40]);
+    subplot(4,1,2); plot(time, actuator_matrix(2,:),'r'); ylabel('U roll', 'FontWeight', 'bold'); hold on;grid on; xlim([ts_search,te_search]);
+    subplot(4,1,3); plot(time, actuator_matrix(3,:),'b'); ylabel('U pitch', 'FontWeight', 'bold'); hold on;grid on; xlim([ts_search,te_search]);
     subplot(4,1,4); plot(time, actuator_matrix(4,:),'g'); ylabel('U yaw', 'FontWeight', 'bold'); hold on;grid on; xlim([ts_search,te_search]);
 
 
