@@ -2,8 +2,10 @@ clear all;
 close all;
 clc;
 
-
+%% DATA PRE-PROCESSING AND DATA EXTRATION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% control variables
+% KEEP THIS SECTION AS IS UNLESS FREQ CHANGES OR YOU WANT TO RUN DMDC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 dt = 1/40;
 
@@ -15,6 +17,11 @@ gen = 1;
 %%%%%%%% defines the interval of interest 
 ts_search = 70; % used to find the input to the modes
 te_search = 235;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THIS FILE ONLY ANALYZES THE LATERAL DYNAMICS OF A QUADROTYOR SO IGNORE MODES 0-4 AND CHANGE MODE 5 TO THE TIME INTERVAL OF INTEREST TO YOU
+% NOTE : Modes 0 -3 were originally used for deriving system dynamics using DMDC (this script still contains the DMDC algorithms but they are commented out for now)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % %%%%%%%%%%% roll + gen
 % mode = 0;
@@ -44,32 +51,35 @@ te_search = 235;
 % ts_gen = 195;
 % te_gen = 205;
 
-% %%%%%%%%% lon
-%  mode = 4;
-%  ts = 120; 
-%  te = 125;
-%  ts_gen = 195;
-%  te_gen = 205;
+%%%%%%%%% lon
+ % mode = 4;
+ % ts = 143; %125; %145; 
+ % te = 147; %130; %151;
+ % ts_gen = 195;
+ % te_gen = 205;
 
- %%%%%%%%%% lat
+ % %%%%%%%%%% lat
  mode = 5;
- ts = 187; 
- te = 190;
+ ts = 200;
+ te = 248; 
  ts_gen = 195; 
- te_gen = 205;
-
-% %%%%%%%%%%% roll+pitch + gen
-% mode = 6;
-% ts = 94;
-% te = 100; 
-% ts_gen = 188;
-% te_gen = 198;
+ te_gen = 200;
 
 input_shift = -0.004;
 
-[time_import,inputs_import,RCIN_import,states_import] = data_import2("drone_data_2.bin",'mocap_2.csv', dt , 33.6, [ts_search,te_search]);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THIS SECTION IS HOW YOU IMPORT FLIGHT DATA FOR MODEL ANALYSIS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%Extract data
+plot_true = 1;
+use_IMU_for_pqr_not_mocap = 1;
+% [time_import,inputs_import,RCIN_import,states_import] = data_import("SID_combined.bin",'5-1-flight_SID_combined.csv',[5,400], 1/40 , 17.45 , plot_true , use_IMU_for_pqr_not_mocap);
+% [time_import,inputs_import,RCIN_import,states_import] = data_import2("drone_data_2.bin",'mocap_2.csv', dt , 33.6, [ts_search,te_search]); %[ts_search,te_search]
+[time_import,inputs_import,RCIN_import,states_import] = data_import("5-6-SID-roll2.bin",'5-6-SID-roll2.csv',[5,400], 1/40 , 19.44 , plot_true , use_IMU_for_pqr_not_mocap);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% EXTRACT DATA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 time = time_import - time_import(1);
 pos_x = states_import(:,1);
 pos_y = states_import(:,2);
@@ -87,17 +97,16 @@ w = states_import(:,12);
 thrust = inputs_import(:,1) ;
 roll_torque = inputs_import(:,2);
 pitch_torque = inputs_import(:,3);
-yaw_torque = inputs_import(:,4) ;
-
+yaw_torque = inputs_import(:,4);
 
 throttle = RCIN_import(:,1); 
 roll_input = RCIN_import(:,2); 
 pitch_input = RCIN_import(:,3); 
 yaw_input = RCIN_import(:,4);
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% input data processing 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INPUT DATA PROCESSING
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 shift_spot = 100 / dt;
 
 throttle = throttle - throttle(shift_spot);
@@ -110,27 +119,10 @@ thrust = thrust - thrust(shift_spot) + input_shift;
 % pitch_torque = pitch_torque - pitch_torque(shift_spot);
 % yaw_torque = yaw_torque - yaw_torque(shift_spot);
 
-% % % % Filter data
-% fs = 1/dt;
-% fc = 10;
-% order = 10;
-% 
-% thrust = filterData(thrust,fs,fc,order);
-% roll_torque = filterData(roll_torque,fs,fc,order);
-% pitch_torque = filterData(pitch_torque,fs,fc,order);
-% yaw_torque = filterData(yaw_torque,fs,fc,order);
-% 
-% 
-% % % % % Filter data
-% meanval = 3;
-% 
-% thrust = movmean(thrust,meanval);
-% roll_torque = movmean(roll_torque,meanval);
-% pitch_torque = movmean(pitch_torque,meanval);
-% yaw_torque = movmean(yaw_torque,meanval);
 
-
-%% Define System States
+%% DEFINE SYSTEM DYNAMICS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Ensure that these states are correctly indexed for your dataset
 % 1. phi - pitch angle
 % 2. theta - roll angle
@@ -156,8 +148,9 @@ actuator_matrix = [thrust.';roll_torque.';pitch_torque.';yaw_torque.'];
 
 control_matrix = [throttle.';roll_input.';pitch_input.';yaw_input.'];
 
-
-%% Extract Relevant Data for DMDc
+%% Extract Relevant Data for DMDc or System Identification
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 time_start = ts/dt;
 time_end = te/dt;
 
@@ -177,7 +170,7 @@ M3_dmdc = actuator_matrix(3, time_start:time_end);
 M4_dmdc = actuator_matrix(4, time_start:time_end);
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% This section is used for running DMDC
 xTime = [0: dt: te-ts];
 
 xOutput_roll = [phi_dmdc; p_dmdc ; v_dmdc]; 
@@ -188,9 +181,8 @@ xOutput_roll_pitch = [phi_dmdc; theta_dmdc;p_dmdc;q_dmdc;u_dmdc;v_dmdc];
 xOutput_lon = [q_dmdc; u_dmdc; w_dmdc; theta_dmdc];
 xOutput_lat = [p_dmdc; r_dmdc; v_dmdc; phi_dmdc];
 
-% xInputs_act = [M1_dmdc;M2_dmdc;M3_dmdc;M4_dmdc];
-
 %% For Generalization Purposes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 time_start = ts_gen/dt;
 time_end = te_gen/dt;
 
@@ -210,57 +202,64 @@ M3_dmdc_gen = actuator_matrix(3, time_start:time_end);
 M4_dmdc_gen = actuator_matrix(4, time_start:time_end);
 
 %% For System Identification Toolbox - To verify DMDc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTE: THIS SECTION DEFINES THE RELEVANT INPUTS AND OUTPUTS FOR THE LATERAL DYNAMICS OF A QUADROTOR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Lateral and Longitudinal states
-output_lon = [q_dmdc; u_dmdc; w_dmdc; theta_dmdc]';
-output_lat = [p_dmdc; r_dmdc; v_dmdc; phi_dmdc]';
+% Define 4 state Lateral inputs and outputs
+output_lat = [p_dmdc; r_dmdc; v_dmdc; phi_dmdc]'; % States (p,r,v,phi)
+input_lat = [M2_dmdc; M4_dmdc]'; % Roll and Yaw inputs 
 
-% Filter r
+% Define 3 state lateral inputs and outputs with yaw (r) removed 
+output_lat_3 = [p_dmdc; v_dmdc; phi_dmdc]';
+input_lat_3 = [M2_dmdc]'; % yaw input removed 
+
+% 3 state lateral dynamics aligned with Greg's Paper for comparison
+output_lat_greg = [v_dmdc; p_dmdc; phi_dmdc]';
+input_lat_greg = [M2_dmdc]';
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% If the state data is noisy, filter without introducing a time delay and re-define outputs and inputs
+% (note: the sgolay filter doesn't introduce a time delay)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Filter state r (lateral)
 r_dmdc_filt = sgolayfilt(r_dmdc, 3, 21);
 figure;
 plot(r_dmdc_filt)
 hold on
 plot(r_dmdc, 'r--')
 
-% Filter p
+% Filter state p (lateral)
 p_dmdc_filt = sgolayfilt(p_dmdc, 3, 21);
 figure;
 plot(p_dmdc_filt)
 hold on
 plot(p_dmdc, 'r--')
 
-% Filter v
+% Filter state v (lateral)
 v_dmdc_filt = sgolayfilt(v_dmdc, 3, 21);
 figure;
 plot(v_dmdc_filt)
 hold on
 plot(v_dmdc, 'r--')
 
-% Filter phi
+% Filter state phi (lateral)
 phi_dmdc_filt = sgolayfilt(phi_dmdc, 3, 21);
 figure;
 plot(phi_dmdc_filt)
 hold on
 plot(phi_dmdc, 'r--')
 
-% Lateral state with filtered r
-output_lat_filt_r = [p_dmdc; r_dmdc_filt; v_dmdc; phi_dmdc]';
-
-% Lateral state with filtered p
-output_lat_filt_p = [p_dmdc_filt; r_dmdc; v_dmdc; phi_dmdc]';
-
-% Lateral filtered states
+% Filtered  4 state Lateral Outputs
 output_lat_filt = [p_dmdc_filt; r_dmdc_filt; v_dmdc_filt; phi_dmdc_filt]';
 
-% Lateral filtered states remove r
-output_lat_filt_no_r = [p_dmdc_filt; v_dmdc_filt; phi_dmdc_filt]';
+% Filtered 3 state Lateral outputs in same order as Greg's paper
+output_lat_gregfilt = [v_dmdc_filt; p_dmdc_filt; phi_dmdc_filt]';
 
-% Inputs 
-input_lon = [M3_dmdc; M1_dmdc]';
-input_lat = [M2_dmdc; M4_dmdc]';
-input_lat2 = [M2_dmdc]';
-input_matrix = [M1_dmdc; M2_dmdc; M3_dmdc; M4_dmdc]';
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTE: THIS STEP VERIFIES THE FILTERED DATA MATCHES UP WITH THE RAW DATA AND THAT THE STATES WERE DEFINED CORRECTLY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check r is actually the correct data (ddt of psi)
 figure;
 psi_ddt = (psi_dmdc(2:end) - psi_dmdc(1:end-1))/dt;
@@ -268,55 +267,29 @@ plot(psi_ddt)
 hold on
 plot(r_dmdc, 'r--')
 
-% Generalization for SYSID Toolbox
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTE: THIS STEP IS FOR GENERALIZATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Generalization for SYSID (check that the models generalize well)
 output_lon_gen = [q_dmdc_gen; u_dmdc_gen; w_dmdc_gen; theta_dmdc_gen]';
 output_lat_gen = [p_dmdc_gen; r_dmdc_gen; v_dmdc_gen; phi_dmdc_gen]';
 
 input_lon_gen = [M3_dmdc_gen; M1_dmdc_gen]';
 input_lat_gen = [M2_dmdc_gen; M4_dmdc_gen]';
 
-%% Babcock
-W_0 = 0;
-g = 9.8;
-theta_0 = 0;
-U_0 = 0;
-M_col = 0;
-X_col = 0;
-L_ped = 0;
-Y_ped = 0;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTE: FOR THE NEXT TWO SECTIONS, DEPENDING ON WHICH MODELS YOUR TRYING TO BUILD, UNCOMMENT THE RELEVANT SECTION
+% EXAMPLE: IF I WANT TO BUILD A 3 STATE LATERAL MODEL, ILL COMMENT OUT THE SECTION LABELED 'LATERAL 4 STATE DYNAMICS'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-A_lon_bab = [0.9 10.8 26.6 0;
-    -0.08051-W_0 -0.25 0 -g*cos(theta_0);
-    U_0 0.3558 0.7 -g*sin(theta_0);
-    1 0 0 0];
-
-% delta_lon, delta_col (throttle)
-B_lon_bab = [149.8 M_col;
-    -7.2 X_col;
-    -5.7 -13.8;
-    0 0];
-
-% Lateral dynamics (p, r, v, phi)
-A_lat_bab = [0 -21.6 -6.7 0;
-    0.06 -3.8 0 0;
-    0.11*W_0 -U_0 -0.18 g*cos(theta_0);
-    1 0 0 0];
-
-% delta_lat, delta_ped
-B_lat_bab = [153.4 L_ped;
-    -4.0 31.1;
-    7.4 Y_ped;
-    0 0]; 
-
-%% Use idss to set structural constraints on SYSID linear models 
-% %% Longitudinal Dynamics
+%% Lateral 4 state dynamics (CONSTRAINED A/B TO WHAT WE EXPECT)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Define initial state-space matrices (placeholders for estimation)
-% A = A_lon_bab; %ss_lon.A; %rand(4);
-% B = B_lon_bab; %ss_lon.B; %rand(4,2);
-% C = ss_lon2.C;
+% A = ss_lat2.A; %A_lat_bab; %rand(4);
+% B = ss_lat2.B; %B_lat_bab; %rand(4,2);
+% C = eye(4); %ss_lat2.C;
 % D = zeros(4,2);
-% K = ss_lon2.K;
-% x0 = zeros(4,1);
+% K = ss_lat2.K;
 % Ts = 0; % Ts = dt, discrete-time system
 % 
 % % Create idss model
@@ -330,9 +303,9 @@ B_lat_bab = [153.4 L_ped;
 % sys.Structure.A.Free(4,:) = [false false false false]; 
 % sys.A(4,:) = [1 0 0 0];
 % 
-% % Fix the last column of A to [0; -9.8; 0; 0]
+% % Fix the last column of A to [0; 0; 9.8; 0]
 % sys.Structure.A.Free(:,4) = [false; false; false; false];
-% sys.A(:,4) = [0; -9.8; 0; 0];
+% sys.A(:,4) = [0; 0; 9.8; 0];
 % 
 % % % B matrix constraints
 % sys.Structure.B.Free = true(4,2); % Allow estimation
@@ -342,25 +315,23 @@ B_lat_bab = [153.4 L_ped;
 % sys.Structure.B.Free(4,:) = [false false];
 % sys.B(4,:) = [0 0];
 % 
-% sys.Structure.B.Free(1,2) = false;
-% sys.B(1,2) = 0;
-% 
-% sys.Structure.B.Free(2,2) = false;
-% sys.B(2,2) = 0;
+% % % C matrix constraints
+% sys.Structure.C.Free = false(4);
+% sys.C = eye(4);
 % 
 % % Estimate the structured state-space model
 % 
 % % Define estimation options
 % opt = ssestOptions;
-% opt.InitializeMethod = 'n4sid';
-% opt.InitialState = 'estimate';  % Initial condition can't be zero (drone hover)
+% opt.InitializeMethod = 'n4sid';  
+% opt.InitialState = 'estimate';  % Initial condition can't be zero (drone hover)?
 % opt.Display = 'on';  % Show iteration progress
-% %opt.SearchMethod = 'lm';  % Levenberg-Marquardt for better convergence (good for nonlin problems)
+% %opt.SearchMethod = 'lm';  % Levenberg-Marquardt for better convergence
 % opt.SearchMethod = 'lsqnonlin';  % good for nonlin, least squares problems
 % opt.SearchOptions.MaxIterations = 1000;  % Increase iterations for better estimates
-% %opt.SearchOptions.Tolerance = 1e-6;  % Define a convergence threshold (use when opt.SearchMethod = 'lm')
+% %opt.SearchOptions.Tolerance = 1e-6;  % Define a convergence threshold
 % 
-% data = iddata(output_lon, input_lon, dt);
+% data = iddata(output_lat, input_lat, dt);
 % estimated_sys = ssest(data, sys, opt);
 % 
 % % Display estimated parameters
@@ -379,59 +350,87 @@ B_lat_bab = [153.4 L_ped;
 % B_est = estimated_sys.B;
 % C_est = estimated_sys.C;
 % D_est = estimated_sys.D;
-% 
-% % Plot the output comparison
-% y = lsim(c2d(ss(A_est, B_est, C_est , D_est), dt), input_lon, 0:dt:5);
-% figure
-% plot(0:dt:5, y(:,1))
-% hold on
-% plot(0:dt:5, q_dmdc, 'r')
 
-%% Lateral dynamics
+%% Lateral 3 state dynamics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Define initial state-space matrices (placeholders for estimation)
-A = ss_lat2.A; %A_lat_bab; %rand(4);
-B = ss_lat2.B; %B_lat_bab; %rand(4,2);
-C = ss_lat2.C;
-D = zeros(4,2);
-K = ss_lat2.K;
-Ts = 0; % Ts = dt, discrete-time system
+% THIS A,B,C,D,K PROVIDE AN INITIAL GUESS FOR IDSS TO BUILD A MODEL OFF OF
+
+% NOTE: Run the systemidentification toolbox by typing
+% 'systemIdentification' into the command window. import input and output
+% data into the gui and use the estimation tool to estimated a ss model.
+% Once you have the toolbox's model, import that into the workspace and
+% that can act as your initial guess as well (use the K from the toolbox
+% for K's initial guess)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+A = [-0.821 -0.437 9.8; -2.52 2.20 0; 0 1 0]; % Greg's lateral A model
+B = [0.000205; 0.0184; 0]; % Greg's Lateral B model
+C = eye(3); % 3x3 identity matrix
+D = zeros(3,1); % 3x1 zero matrix
+K = ss_greg1_lat.K;
+Ts = 0; % continuous-time system
 
 % Create idss model
 sys = idss(A, B, C, D, K, 'Ts', Ts);
 
-% A matrix constraints
-sys.Structure.A.Free = true(4); % Allow estimation for all elements
-sys.Structure.A.Value = A; % Retain initial values
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTE: FOR THIS SECTION, IF YOU WANT A MODEL WHERE C,D IS CONSTAINED TO
+% IDENTITY, COMMENT OUT 'STRUCTURED A AND B'. IF YOU WANT A MODEL WHERE
+% A,B,C,D ARE ALL CONSTRAINED, COMMENT OUT 'UNSTRUCTURED' SECTION.
 
-% Fix the last row of A to [1 0 0 0]
-sys.Structure.A.Free(4,:) = [false false false false]; 
-sys.A(4,:) = [1 0 0 0];
+% Unstructured
+sys.Structure.A.Free = true(3);
+sys.Structure.B.Free = true(3,1);
+% C matrix constraints
+sys.Structure.C.Free = false(3);
+sys.C = eye(3);
+% D matrix constraints
+sys.Structure.D.Free = false(size(D)); 
+sys.D = zeros(size(D));
 
-% Fix the last column of A to [0; 0; 9.8; 0]
-sys.Structure.A.Free(:,4) = [false; false; false; false];
-sys.A(:,4) = [0; 0; 9.8; 0];
-
-% % B matrix constraints
-sys.Structure.B.Free = true(4,2); % Allow estimation
-sys.Structure.B.Value = B; % Retain initial values
-
-% Fix last row of B to [0 0]
-sys.Structure.B.Free(4,:) = [false false];
-sys.B(4,:) = [0 0];
+% % Structured A and B
+% % A matrix constraints
+% sys.Structure.A.Free = true(3); % Allow estimation for all elements
+% sys.Structure.A.Value = A; % Retain initial values
+% 
+% % Fix the last row of A to [0 1 0]
+% sys.Structure.A.Free(3,:) = [false false false]; 
+% sys.A(3,:) = [0 1 0];
+% 
+% % Fix the last column of A to [9.8; 0; 0]
+% sys.Structure.A.Free(:,3) = [false; false; false];
+% sys.A(:,3) = [9.8; 0; 0];
+% 
+% % % B matrix constraints
+% sys.Structure.B.Free = true(3,1); % Allow estimation
+% sys.Structure.B.Value = B; % Retain initial values
+% 
+% % Fix last row of B to [0]
+% sys.Structure.B.Free(3,:) = false;
+% sys.B(3,:) = 0;
+% 
+% % C matrix constraints
+% sys.Structure.C.Free = false(3);
+% sys.C = eye(3);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Estimate the structured state-space model
-
 % Define estimation options
+% These options can help build a better model than what the toolbox's auto-options are
 opt = ssestOptions;
 opt.InitializeMethod = 'n4sid';  
 opt.InitialState = 'estimate';  % Initial condition can't be zero (drone hover)?
 opt.Display = 'on';  % Show iteration progress
-%opt.SearchMethod = 'lm';  % Levenberg-Marquardt for better convergence
-opt.SearchMethod = 'lsqnonlin';  % good for nonlin, least squares problems
-opt.SearchOptions.MaxIterations = 1000;  % Increase iterations for better estimates
+opt.SearchMethod = 'lm';  % Levenberg-Marquardt for better convergence %'gn', 'gna', 'lm', 'grad', 'lsqnonlin', 'fmincon'
+%opt.SearchMethod = 'lsqnonlin';  % good for nonlin, least squares problems
+opt.SearchOptions.MaxIterations = 10000;  % Increase iterations for better estimates
 %opt.SearchOptions.Tolerance = 1e-6;  % Define a convergence threshold
 
-data = iddata(output_lat, input_lat, dt);
+% % add options to help with ill-conditioning (high cond #) - sometimes this options severly hurts the model, sometimes it helps
+% R = 1e-4 * eye(15);  % A small positive value on the diagonal (identity matrix)
+% opt.Regularization = struct('Lambda', 1e-1, 'R', R, 'Nominal', 'zero'); %1e-4
+
+data = iddata(output_lat_gregfilt, input_lat_greg, dt);
 estimated_sys = ssest(data, sys, opt);
 
 % Display estimated parameters
@@ -444,64 +443,135 @@ disp(estimated_sys.B);
 disp('Estimated C matrix:');
 disp(estimated_sys.C);
 
-% plot results against original data for comparison
+disp('Estimated D matrix:');
+disp(estimated_sys.D);
+
 % Extract estimated A and B matrices
 A_est = estimated_sys.A;
 B_est = estimated_sys.B;
 C_est = estimated_sys.C;
 D_est = estimated_sys.D;
 
-% Plot the output comparison
-y = lsim(c2d(ss(A_est, B_est, C_est , D_est), dt), input_lat, 0:dt:3);
-figure
-plot(0:dt:3, y(:,1))
-hold on
-plot(0:dt:3, p_dmdc, 'r')
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THE NEXT SECTIONS ARE USED FOR MODEL ANALYSIS AND COMPARISON
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Bode plot of roll input to roll rate (p)
 
+% C to extract second state (p)
+C_p = [0 1 0]; % p is the second state
+D_p = 0;
 
+% Create new SISO system from roll input to p
+sys_p = ss(A_est, B_est, C_p, D_p, Ts);
 
-%% compare babcock output with our inputs to our outputs
+% Greg's lateral model for comparison
+sys_greg_p = ss(A,B,C_p,D_p,Ts);
 
-% W_0 = 0;
-% g = 9.8;
-% theta_0 = 0;
-% U_0 = 0;
-% M_col = 0;
-% X_col = 0;
-% L_ped = 0;
-% Y_ped = 0;
-% 
-% A_lon_bab = [0.9 10.8 26.6 0;
-%     -0.08051-W_0 -0.25 0 -g*cos(theta_0);
-%     U_0 0.3558 0.7 -g*sin(theta_0);
-%     1 0 0 0];
-% 
-% % delta_lon, delta_col (throttle)
-% B_lon_bab = [149.8 M_col;
-%     -7.2 X_col;
-%     -5.7 -13.8;
-%     0 0];
-% 
-% % Lateral dynamics (p, r, v, phi)
-% A_lat_bab = [0 -21.6 -6.7 0;
-%     0.06 -3.8 0 0;
-%     0.11*W_0 -U_0 -0.18 g*cos(theta_0);
-%     1 0 0 0];
-% 
-% % delta_lat, delta_ped
-% B_lat_bab = [153.4 L_ped;
-%     -4.0 31.1;
-%     7.4 Y_ped;
-%     0 0]; 
-% 
-% y = lsim(c2d(ss(A_lat_bab, B_lat_bab, eye(4) , zeros(4,2)), dt), input_lat, 0:dt:5);
-% figure
-% plot(0:dt:5, y(:,1))
-% hold on
-% plot(0:dt:5, q_dmdc, 'r')
-% y
+% [GM1, PM1] = margin(sys_p) % computes the gain and phase margins
+% [GM2, PM2] = margin(sys_greg)
 
+% Bode plot
+figure;
+bode(sys_p); hold on;
+bode(sys_greg_p);
+grid on;
+title('Bode Plot: Roll Input to Roll Rate p');
+xlabel('Frequency (rad/s)');
+ylabel('Magnitude / Phase');
+legend('Model 1', 'Greg');
 
+%% Bode plot from roll input to velocity (v)
+% C to extract first state (v)
+C_v = [1 0 0]; % v is the first state
+D_v = 0;
+
+% Create SISO system for v
+sys_v = ss(A_est, B_est, C_v, D_v, Ts);
+
+% Greg's model
+sys_greg_v = ss(A,B,C_v,D_v,Ts);
+
+% Bode plot
+figure;
+bode(sys_v); hold on;
+bode(sys_greg_v);
+grid on;
+title('Bode Plot: Roll Input to Velocity v');
+xlabel('Frequency (rad/s)');
+ylabel('Magnitude / Phase');
+legend('Model 1', 'Greg');
+
+%% Bode plot from roll input to phi
+% C to extract third state (phi)
+C_phi = [0 0 1]; % phi is the third state
+D_phi = 0;
+
+% Create SISO system for phi
+sys_phi = ss(A_est, B_est, C_phi, D_phi, Ts);
+
+% Greg's model
+sys_greg_phi = ss(A,B,C_phi,D_phi,Ts);
+
+% Bode plot
+figure;
+bode(sys_phi); hold on;
+bode(sys_greg_phi);
+grid on;
+title('Bode Plot: Roll Input to \phi');
+xlabel('Frequency (rad/s)');
+ylabel('Magnitude / Phase');
+legend('Model 1', 'Greg');
+
+%% observability and controllability
+obsv_matrix = obsv(A_est, C_est);
+ctrb_matrix = ctrb(A_est, B_est);
+rank_obsv = rank(obsv_matrix);
+rank_ctrb = rank(ctrb_matrix);
+disp(['Observability rank: ', num2str(rank_obsv)]);
+disp(['Controllability rank: ', num2str(rank_ctrb)]);
+
+%% Check Condition # of A
+cond_A = cond(A_est);
+disp(['Condition number of A: ', num2str(cond_A)]);
+
+%% Eigenvalue comparison of models
+% Flight data 5/1/25
+% eigs_all = {
+%     [-2.803 + 0j, 2.091 + 2.11j, 2.091 - 2.11j];       % Model 1
+%     [-0.0724 + 2.376j, -0.0724 - 2.376j, -5.635 + 0j];     % Model 2
+%     [-0.218 + 0.7266j, -0.218 - 0.7266j, 0.6375 + 0j];  % Model 3
+%     [0.5106 + 1.8692j, 0.5106 - 1.8692j, -1.0537 + 0j];  % Model 4
+%     [0.9287 + 0.4978j, 0.9287 - 0.4978j, -0.367 + 0j]  % Model 5
+% };
+
+% Flight data 5/6/25
+eigs_all = {
+    [0.1643 + 1.5416j, 0.1643 - 1.5416j, -2.6757 + 0j];  % Model 1
+    [  -0.2428 + 0.4939j, -0.2428 - 0.4939j, 0.5509 + 0j];     % Model 2
+    [-2.803 + 0j, 2.091 + 2.11j, 2.091 - 2.11j];  % greg
+};
+
+figure;
+hold on; grid on;
+xlabel('Real Part'); ylabel('Imaginary Part');
+title('Eigenvalue Model Comparison');
+
+colors = lines(length(eigs_all));
+for i = 1:length(eigs_all)
+    plot(real(eigs_all{i}), imag(eigs_all{i}), 'o', ...
+        'Color', colors(i,:), ...
+        'MarkerFaceColor', colors(i,:), ...  % Fill color
+        'MarkerSize', 8, ...
+        'DisplayName', ['Model ' num2str(i)]);
+end
+xline(0, 'k', 'LineWidth', 1);  % y-axis
+yline(0, 'k', 'LineWidth', 1);  % x-axis
+legend('show');
+axis equal;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THIS SECTION IS ONLY RELEVANT FOR RUNNING DMDC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DMDc Algorithm 
 if mode == 0 % roll mode 
     xOutput = xOutput_roll;
@@ -798,8 +868,3 @@ function sys = DMDC_alg(inputs, states, dt)
 end
 
 function filtData = filterData(data,fs,fc,order)
-% Remove non-finite values (NaN, Inf) from the data
-data = data(isfinite(data));
-[b,a] = butter(order,fc/(fs/2));
-filtData = filtfilt(b,a,data);
-end
